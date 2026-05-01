@@ -18,6 +18,7 @@ install_cloudflared=0
 verify_codex=1
 
 cloudflare_access=0
+cloudflare_access_disabled=0
 cloudflare_app_url="${LOGCHEF_CF_ACCESS_APP_URL:-}"
 cloudflared_path="${LOGCHEF_CLOUDFLARED_PATH:-}"
 cloudflare_auto_login="${LOGCHEF_CF_ACCESS_AUTO_LOGIN:-true}"
@@ -41,7 +42,7 @@ Usage:
   $script_name [options]
 
 Common setup:
-  $script_name --cloudflare-access
+  $script_name
 
 Options:
   --url <url>                         Logchef URL. Default: $logchef_url
@@ -58,7 +59,8 @@ Options:
   --non-interactive                   Never prompt for missing values.
 
 Cloudflare Access SSO:
-  --cloudflare-access                 Use cloudflared Access token flow.
+  --cloudflare-access                 Use cloudflared Access token flow. Auto-enabled for CARS24 Logchef URLs.
+  --no-cloudflare-access              Disable automatic Cloudflare Access for custom network setups.
   --access-app-url <url>              Cloudflare Access app URL. Defaults to --url.
   --cloudflared-path <path>           cloudflared path. Defaults to command lookup.
   --login                             Run cloudflared access login. Default with --cloudflare-access.
@@ -79,8 +81,9 @@ TLS:
   --insecure-skip-verify             Last-resort local workaround for private TLS issues.
 
 Examples:
-  $script_name --cloudflare-access
-  $script_name --cloudflare-access --ca-cert-file ~/.codex/logchef-cloudflare-gateway-ca.pem
+  $script_name
+  $script_name --url https://logchef-dev.cars24.team
+  $script_name --ca-cert-file ~/.codex/logchef-cloudflare-gateway-ca.pem
   LOGCHEF_API_KEY=logchef_xxx $script_name --service-token-client-id xxx --service-token-client-secret yyy --no-login
 USAGE
 }
@@ -144,6 +147,17 @@ parse_bool() {
   esac
 }
 
+is_cars24_logchef_url() {
+  case "$1" in
+    https://logchef.cars24.team|https://logchef-dev.cars24.team|http://logchef.cars24.team|http://logchef-dev.cars24.team)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
 while (($#)); do
   case "$1" in
     --url)
@@ -201,6 +215,12 @@ while (($#)); do
       ;;
     --cloudflare-access)
       cloudflare_access=1
+      cloudflare_access_disabled=0
+      shift
+      ;;
+    --no-cloudflare-access)
+      cloudflare_access=0
+      cloudflare_access_disabled=1
       shift
       ;;
     --access-app-url)
@@ -288,6 +308,17 @@ if [[ "$logchef_url" != http://* && "$logchef_url" != https://* ]]; then
   die "--url must start with http:// or https://"
 fi
 logchef_url="${logchef_url%/}"
+
+if [[ "$cloudflare_access_disabled" -eq 0 &&
+      "$cloudflare_access" -eq 0 &&
+      -z "$cf_client_id" &&
+      -z "$cf_client_secret" &&
+      -z "$cf_access_token" &&
+      -z "$cf_authorization" &&
+      -z "$cf_appsession" ]] && is_cars24_logchef_url "$logchef_url"; then
+  cloudflare_access=1
+  info "Detected CARS24 Logchef URL; enabling Cloudflare Access via cloudflared."
+fi
 
 if [[ -z "$api_key" && "$non_interactive" -eq 0 && -t 0 ]]; then
   read -r -s -p "Logchef API key: " api_key

@@ -148,6 +148,8 @@ Choose one of the following installation methods:
 
      For Codex users connecting to a Cloudflare Access protected Logchef
      instance, see the [Codex + Cloudflare Access setup guide](docs/codex-cloudflare-access.md).
+     For CARS24 production and non-prod Logchef URLs, `scripts/setup-codex-logchef.sh`
+     enables the `cloudflared` Access flow by default.
 
 3. Add the server configuration to your client configuration file. For example, for Claude Desktop:
 

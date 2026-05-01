@@ -126,6 +126,9 @@ codex mcp add logchef -- logchef-mcp
 For Logchef instances protected by Cloudflare Access, use the dedicated
 [Codex + Cloudflare Access setup guide](codex-cloudflare-access.md).
 
+For the CARS24 production and non-prod URLs, `scripts/setup-codex-logchef.sh`
+enables the native `cloudflared` Access flow by default.
+
 ### Windsurf
 
 Open Windsurf Settings > MCP, then add:

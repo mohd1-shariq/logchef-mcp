@@ -49,17 +49,20 @@ Cloudflare Access login, backs up `~/.codex/config.toml`, and writes the Codex
 MCP config:
 
 ```bash
-./scripts/setup-codex-logchef.sh --cloudflare-access
+./scripts/setup-codex-logchef.sh
 ```
 
 If `LOGCHEF_API_KEY` is not already set, the script prompts for it without
 echoing the value.
 
+For `https://logchef.cars24.team` and `https://logchef-dev.cars24.team`, the
+script automatically enables the `cloudflared` Cloudflare Access flow. If you
+are targeting a custom non-Access Logchef URL, pass `--no-cloudflare-access`.
+
 With a Cloudflare Gateway/WARP CA file:
 
 ```bash
 ./scripts/setup-codex-logchef.sh \
-  --cloudflare-access \
   --ca-cert-file ~/.codex/logchef-cloudflare-gateway-ca.pem
 ```
 
