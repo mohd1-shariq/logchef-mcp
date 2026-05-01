@@ -13,9 +13,19 @@ import (
 
 // Config holds the configuration for the Logchef client
 type Config struct {
-	BaseURL string
-	APIKey  string
-	Timeout time.Duration
+	BaseURL                    string
+	APIKey                     string
+	Timeout                    time.Duration
+	CACertFile                 string
+	InsecureSkipVerify         bool
+	CloudflareAccessClientID   string
+	CloudflareAccessSecret     string
+	CloudflareAccessToken      string
+	CloudflareAccessAppURL     string
+	CloudflaredPath            string
+	CloudflareAccessAutoLogin  bool
+	CloudflareAuthorizationJWT string
+	CloudflareAppSession       string
 }
 
 // Client represents a Logchef API client
@@ -31,10 +41,8 @@ func New(config Config) *Client {
 	}
 
 	return &Client{
-		config: config,
-		httpClient: &http.Client{
-			Timeout: config.Timeout,
-		},
+		config:     config,
+		httpClient: newHTTPClient(config),
 	}
 }
 
@@ -88,17 +96,17 @@ type SourceConnection struct {
 
 // SourceResponse represents a source with its details
 type SourceResponse struct {
-	ID                   int               `json:"id"`
-	Name                 string            `json:"name"`
-	Description          string            `json:"description"`
-	Connection           SourceConnection  `json:"connection"`
-	MetaIsAutoCreated    bool              `json:"_meta_is_auto_created"`
-	MetaTsField          string            `json:"_meta_ts_field"`
-	MetaSeverityField    string            `json:"_meta_severity_field"`
-	TTLDays              int               `json:"ttl_days"`
-	IsConnected          bool              `json:"is_connected"`
-	CreatedAt            string            `json:"created_at"`
-	UpdatedAt            string            `json:"updated_at"`
+	ID                int              `json:"id"`
+	Name              string           `json:"name"`
+	Description       string           `json:"description"`
+	Connection        SourceConnection `json:"connection"`
+	MetaIsAutoCreated bool             `json:"_meta_is_auto_created"`
+	MetaTsField       string           `json:"_meta_ts_field"`
+	MetaSeverityField string           `json:"_meta_severity_field"`
+	TTLDays           int              `json:"ttl_days"`
+	IsConnected       bool             `json:"is_connected"`
+	CreatedAt         string           `json:"created_at"`
+	UpdatedAt         string           `json:"updated_at"`
 }
 
 // TeamSourcesResponse represents the response from the /api/v1/teams/:teamID/sources endpoint
@@ -175,8 +183,8 @@ type HistogramDataPoint struct {
 type HistogramResponse struct {
 	Status string `json:"status"`
 	Data   struct {
-		Granularity string                `json:"granularity"`
-		Data        []HistogramDataPoint  `json:"data"`
+		Granularity string               `json:"granularity"`
+		Data        []HistogramDataPoint `json:"data"`
 	} `json:"data"`
 }
 
@@ -301,15 +309,15 @@ type TeamSourceRequest struct {
 
 // User represents a user in the admin API
 type User struct {
-	ID           int       `json:"id"`
-	Email        string    `json:"email"`
-	FullName     string    `json:"full_name"`
-	Role         string    `json:"role"`
-	Status       string    `json:"status"`
-	LastLoginAt  *string   `json:"last_login_at,omitempty"`
-	LastActiveAt *string   `json:"last_active_at,omitempty"`
-	CreatedAt    string    `json:"created_at"`
-	UpdatedAt    string    `json:"updated_at"`
+	ID           int     `json:"id"`
+	Email        string  `json:"email"`
+	FullName     string  `json:"full_name"`
+	Role         string  `json:"role"`
+	Status       string  `json:"status"`
+	LastLoginAt  *string `json:"last_login_at,omitempty"`
+	LastActiveAt *string `json:"last_active_at,omitempty"`
+	CreatedAt    string  `json:"created_at"`
+	UpdatedAt    string  `json:"updated_at"`
 }
 
 // UserRequest represents the request body for creating users
@@ -372,37 +380,37 @@ type APITokensResponse struct {
 
 // APITokenResponse represents the response from single API token endpoints
 type APITokenResponse struct {
-	Status string                  `json:"status"`
-	Data   APITokenCreateResponse  `json:"data"`
+	Status string                 `json:"status"`
+	Data   APITokenCreateResponse `json:"data"`
 }
 
 // Admin Source Management structs
 
 // Source represents a source in the admin API
 type Source struct {
-	ID                   int               `json:"id"`
-	Name                 string            `json:"name"`
-	Description          string            `json:"description"`
-	Connection           SourceConnection  `json:"connection"`
-	MetaIsAutoCreated    bool              `json:"_meta_is_auto_created"`
-	MetaTsField          string            `json:"_meta_ts_field"`
-	MetaSeverityField    string            `json:"_meta_severity_field"`
-	TTLDays              int               `json:"ttl_days"`
-	IsConnected          bool              `json:"is_connected"`
-	CreatedAt            string            `json:"created_at"`
-	UpdatedAt            string            `json:"updated_at"`
+	ID                int              `json:"id"`
+	Name              string           `json:"name"`
+	Description       string           `json:"description"`
+	Connection        SourceConnection `json:"connection"`
+	MetaIsAutoCreated bool             `json:"_meta_is_auto_created"`
+	MetaTsField       string           `json:"_meta_ts_field"`
+	MetaSeverityField string           `json:"_meta_severity_field"`
+	TTLDays           int              `json:"ttl_days"`
+	IsConnected       bool             `json:"is_connected"`
+	CreatedAt         string           `json:"created_at"`
+	UpdatedAt         string           `json:"updated_at"`
 }
 
 // SourceRequest represents the request body for creating sources
 type SourceRequest struct {
-	Name                 string            `json:"name"`
-	Description          string            `json:"description"`
-	Connection           SourceConnection  `json:"connection"`
-	MetaIsAutoCreated    bool              `json:"_meta_is_auto_created"`
-	MetaTsField          string            `json:"_meta_ts_field"`
-	MetaSeverityField    string            `json:"_meta_severity_field"`
-	TTLDays              int               `json:"ttl_days"`
-	Schema               []LogColumn       `json:"schema,omitempty"`
+	Name              string           `json:"name"`
+	Description       string           `json:"description"`
+	Connection        SourceConnection `json:"connection"`
+	MetaIsAutoCreated bool             `json:"_meta_is_auto_created"`
+	MetaTsField       string           `json:"_meta_ts_field"`
+	MetaSeverityField string           `json:"_meta_severity_field"`
+	TTLDays           int              `json:"ttl_days"`
+	Schema            []LogColumn      `json:"schema,omitempty"`
 }
 
 // SourceValidationRequest represents the request body for validating source connections
@@ -416,11 +424,11 @@ type SourceValidationRequest struct {
 
 // SourceValidationResult represents the result of connection validation
 type SourceValidationResult struct {
-	IsValid       bool     `json:"is_valid"`
-	Message       string   `json:"message"`
-	ErrorDetails  []string `json:"error_details,omitempty"`
-	TableExists   bool     `json:"table_exists,omitempty"`
-	ColumnChecks  map[string]bool `json:"column_checks,omitempty"`
+	IsValid      bool            `json:"is_valid"`
+	Message      string          `json:"message"`
+	ErrorDetails []string        `json:"error_details,omitempty"`
+	TableExists  bool            `json:"table_exists,omitempty"`
+	ColumnChecks map[string]bool `json:"column_checks,omitempty"`
 }
 
 // SourcesListResponse represents the response from the admin sources list endpoint
@@ -437,10 +445,9 @@ type AdminSourceResponse struct {
 
 // SourceValidationResponse represents the response from source validation endpoint
 type SourceValidationResponse struct {
-	Status string                  `json:"status"`
-	Data   SourceValidationResult  `json:"data"`
+	Status string                 `json:"status"`
+	Data   SourceValidationResult `json:"data"`
 }
-
 
 // GetProfile retrieves the current user profile
 func (c *Client) GetProfile(ctx context.Context) (*ProfileResponse, error) {
@@ -1742,7 +1749,6 @@ func (c *Client) GetAdminSourceStats(ctx context.Context, sourceID int) (*Source
 	return &stats, nil
 }
 
-
 // --- LogchefQL ---
 
 type LogchefQLQueryRequest struct {
@@ -1757,11 +1763,11 @@ type LogchefQLQueryRequest struct {
 type LogchefQLQueryResponse struct {
 	Status string `json:"status"`
 	Data   struct {
-		Logs         []LogEntry  `json:"logs"`
-		Columns      []LogColumn `json:"columns"`
-		Stats        LogQueryStats  `json:"stats"`
-		QueryID      string      `json:"query_id"`
-		GeneratedSQL string      `json:"generated_sql"`
+		Logs         []LogEntry    `json:"logs"`
+		Columns      []LogColumn   `json:"columns"`
+		Stats        LogQueryStats `json:"stats"`
+		QueryID      string        `json:"query_id"`
+		GeneratedSQL string        `json:"generated_sql"`
 	} `json:"data"`
 }
 
@@ -1887,10 +1893,10 @@ type LogContextRequest struct {
 type LogContextResponse struct {
 	Status string `json:"status"`
 	Data   struct {
-		TargetTimestamp int64      `json:"target_timestamp"`
-		BeforeLogs      []LogEntry `json:"before_logs"`
-		TargetLogs      []LogEntry `json:"target_logs"`
-		AfterLogs       []LogEntry `json:"after_logs"`
+		TargetTimestamp int64         `json:"target_timestamp"`
+		BeforeLogs      []LogEntry    `json:"before_logs"`
+		TargetLogs      []LogEntry    `json:"target_logs"`
+		AfterLogs       []LogEntry    `json:"after_logs"`
 		Stats           LogQueryStats `json:"stats"`
 	} `json:"data"`
 }
