@@ -21,20 +21,117 @@ const (
 	logchefURLEnvVar = "LOGCHEF_URL"
 	logchefAPIEnvVar = "LOGCHEF_API_KEY"
 
-	logchefURLHeader    = "X-Logchef-URL"
-	logchefAPIKeyHeader = "X-Logchef-API-Key"
+	logchefCACertFileEnvVar           = "LOGCHEF_CA_CERT_FILE"
+	logchefInsecureSkipVerifyEnvVar   = "LOGCHEF_INSECURE_SKIP_VERIFY"
+	logchefCFAccessClientIDEnvVar     = "LOGCHEF_CF_ACCESS_CLIENT_ID"
+	logchefCFAccessClientSecretEnvVar = "LOGCHEF_CF_ACCESS_CLIENT_SECRET"
+	logchefCFAccessTokenEnvVar        = "LOGCHEF_CF_ACCESS_TOKEN"
+	logchefCFAccessAppURLEnvVar       = "LOGCHEF_CF_ACCESS_APP_URL"
+	logchefCloudflaredPathEnvVar      = "LOGCHEF_CLOUDFLARED_PATH"
+	logchefCFAccessAutoLoginEnvVar    = "LOGCHEF_CF_ACCESS_AUTO_LOGIN"
+	logchefCFAuthorizationEnvVar      = "LOGCHEF_CF_AUTHORIZATION"
+	logchefCFAppSessionEnvVar         = "LOGCHEF_CF_APPSESSION"
+	logchefURLHeader                  = "X-Logchef-URL"
+	logchefAPIKeyHeader               = "X-Logchef-API-Key"
+	logchefCACertFileHeader           = "X-Logchef-CA-Cert-File"
+	logchefInsecureSkipVerifyHeader   = "X-Logchef-Insecure-Skip-Verify"
+	logchefCFAccessClientIDHeader     = "X-Logchef-CF-Access-Client-ID"
+	logchefCFAccessClientSecretHeader = "X-Logchef-CF-Access-Client-Secret"
+	logchefCFAccessTokenHeader        = "X-Logchef-CF-Access-Token"
+	logchefCFAccessAppURLHeader       = "X-Logchef-CF-Access-App-URL"
+	logchefCloudflaredPathHeader      = "X-Logchef-Cloudflared-Path"
+	logchefCFAccessAutoLoginHeader    = "X-Logchef-CF-Access-Auto-Login"
+	logchefCFAuthorizationHeader      = "X-Logchef-CF-Authorization"
+	logchefCFAppSessionHeader         = "X-Logchef-CF-AppSession"
 )
 
-func urlAndAPIKeyFromEnv() (string, string) {
-	u := strings.TrimRight(os.Getenv(logchefURLEnvVar), "/")
-	apiKey := os.Getenv(logchefAPIEnvVar)
-	return u, apiKey
+type logchefClientConfig struct {
+	URL                  string
+	APIKey               string
+	CACertFile           string
+	InsecureSkipVerify   bool
+	CFAccessClientID     string
+	CFAccessClientSecret string
+	CFAccessToken        string
+	CFAccessAppURL       string
+	CloudflaredPath      string
+	CFAccessAutoLogin    bool
+	CFAuthorizationJWT   string
+	CFAppSession         string
 }
 
-func urlAndAPIKeyFromHeaders(req *http.Request) (string, string) {
-	u := req.Header.Get(logchefURLHeader)
-	apiKey := req.Header.Get(logchefAPIKeyHeader)
-	return u, apiKey
+func logchefConfigFromEnv() logchefClientConfig {
+	return logchefClientConfig{
+		URL:                  strings.TrimRight(os.Getenv(logchefURLEnvVar), "/"),
+		APIKey:               os.Getenv(logchefAPIEnvVar),
+		CACertFile:           os.Getenv(logchefCACertFileEnvVar),
+		InsecureSkipVerify:   client.ParseBoolEnv(os.Getenv(logchefInsecureSkipVerifyEnvVar)),
+		CFAccessClientID:     os.Getenv(logchefCFAccessClientIDEnvVar),
+		CFAccessClientSecret: os.Getenv(logchefCFAccessClientSecretEnvVar),
+		CFAccessToken:        os.Getenv(logchefCFAccessTokenEnvVar),
+		CFAccessAppURL:       os.Getenv(logchefCFAccessAppURLEnvVar),
+		CloudflaredPath:      os.Getenv(logchefCloudflaredPathEnvVar),
+		CFAccessAutoLogin:    client.ParseBoolEnv(os.Getenv(logchefCFAccessAutoLoginEnvVar)),
+		CFAuthorizationJWT:   os.Getenv(logchefCFAuthorizationEnvVar),
+		CFAppSession:         os.Getenv(logchefCFAppSessionEnvVar),
+	}
+}
+
+func logchefConfigFromHeaders(req *http.Request) logchefClientConfig {
+	return logchefClientConfig{
+		URL:                  strings.TrimRight(req.Header.Get(logchefURLHeader), "/"),
+		APIKey:               req.Header.Get(logchefAPIKeyHeader),
+		CACertFile:           req.Header.Get(logchefCACertFileHeader),
+		InsecureSkipVerify:   client.ParseBoolEnv(req.Header.Get(logchefInsecureSkipVerifyHeader)),
+		CFAccessClientID:     req.Header.Get(logchefCFAccessClientIDHeader),
+		CFAccessClientSecret: req.Header.Get(logchefCFAccessClientSecretHeader),
+		CFAccessToken:        req.Header.Get(logchefCFAccessTokenHeader),
+		CFAccessAppURL:       req.Header.Get(logchefCFAccessAppURLHeader),
+		CloudflaredPath:      req.Header.Get(logchefCloudflaredPathHeader),
+		CFAccessAutoLogin:    client.ParseBoolEnv(req.Header.Get(logchefCFAccessAutoLoginHeader)),
+		CFAuthorizationJWT:   req.Header.Get(logchefCFAuthorizationHeader),
+		CFAppSession:         req.Header.Get(logchefCFAppSessionHeader),
+	}
+}
+
+func (c logchefClientConfig) withFallback(fallback logchefClientConfig) logchefClientConfig {
+	if c.URL == "" {
+		c.URL = fallback.URL
+	}
+	if c.APIKey == "" {
+		c.APIKey = fallback.APIKey
+	}
+	if c.CACertFile == "" {
+		c.CACertFile = fallback.CACertFile
+	}
+	if !c.InsecureSkipVerify {
+		c.InsecureSkipVerify = fallback.InsecureSkipVerify
+	}
+	if c.CFAccessClientID == "" {
+		c.CFAccessClientID = fallback.CFAccessClientID
+	}
+	if c.CFAccessClientSecret == "" {
+		c.CFAccessClientSecret = fallback.CFAccessClientSecret
+	}
+	if c.CFAccessToken == "" {
+		c.CFAccessToken = fallback.CFAccessToken
+	}
+	if c.CFAccessAppURL == "" {
+		c.CFAccessAppURL = fallback.CFAccessAppURL
+	}
+	if c.CloudflaredPath == "" {
+		c.CloudflaredPath = fallback.CloudflaredPath
+	}
+	if !c.CFAccessAutoLogin {
+		c.CFAccessAutoLogin = fallback.CFAccessAutoLogin
+	}
+	if c.CFAuthorizationJWT == "" {
+		c.CFAuthorizationJWT = fallback.CFAuthorizationJWT
+	}
+	if c.CFAppSession == "" {
+		c.CFAppSession = fallback.CFAppSession
+	}
+	return c
 }
 
 type logchefURLKey struct{}
@@ -63,16 +160,16 @@ func LogchefDebugFromContext(ctx context.Context) bool {
 // ExtractLogchefInfoFromEnv is a StdioContextFunc that extracts Logchef configuration
 // from environment variables and injects the configuration into the context.
 var ExtractLogchefInfoFromEnv server.StdioContextFunc = func(ctx context.Context) context.Context {
-	u, apiKey := urlAndAPIKeyFromEnv()
-	if u == "" {
-		u = defaultLogchefURL
+	config := logchefConfigFromEnv()
+	if config.URL == "" {
+		config.URL = defaultLogchefURL
 	}
-	parsedURL, err := url.Parse(u)
+	parsedURL, err := url.Parse(config.URL)
 	if err != nil {
-		panic(fmt.Errorf("invalid Logchef URL %s: %w", u, err))
+		panic(fmt.Errorf("invalid Logchef URL %s: %w", config.URL, err))
 	}
-	slog.Info("Using Logchef configuration", "url", parsedURL.Redacted(), "api_key_set", apiKey != "")
-	return WithLogchefURL(WithLogchefAPIKey(ctx, apiKey), u)
+	slog.Info("Using Logchef configuration", "url", parsedURL.Redacted(), "api_key_set", config.APIKey != "")
+	return WithLogchefURL(WithLogchefAPIKey(ctx, config.APIKey), config.URL)
 }
 
 // httpContextFunc is a function that can be used as a `server.HTTPContextFunc` or a
@@ -83,18 +180,11 @@ type httpContextFunc func(ctx context.Context, req *http.Request) context.Contex
 // ExtractLogchefInfoFromHeaders is a HTTPContextFunc that extracts Logchef configuration
 // from request headers and injects the configuration into the context.
 var ExtractLogchefInfoFromHeaders httpContextFunc = func(ctx context.Context, req *http.Request) context.Context {
-	u, apiKey := urlAndAPIKeyFromHeaders(req)
-	uEnv, apiKeyEnv := urlAndAPIKeyFromEnv()
-	if u == "" {
-		u = uEnv
+	config := logchefConfigFromHeaders(req).withFallback(logchefConfigFromEnv())
+	if config.URL == "" {
+		config.URL = defaultLogchefURL
 	}
-	if u == "" {
-		u = defaultLogchefURL
-	}
-	if apiKey == "" {
-		apiKey = apiKeyEnv
-	}
-	return WithLogchefURL(WithLogchefAPIKey(ctx, apiKey), u)
+	return WithLogchefURL(WithLogchefAPIKey(ctx, config.APIKey), config.URL)
 }
 
 // WithLogchefURL adds the Logchef URL to the context.
@@ -127,6 +217,15 @@ type logchefClientKey struct{}
 
 // NewLogchefClient creates a Logchef client with the provided URL and API key.
 func NewLogchefClient(ctx context.Context, logchefURL, apiKey string) *client.Client {
+	config := logchefConfigFromEnv()
+	config.URL = logchefURL
+	config.APIKey = apiKey
+	return NewLogchefClientFromConfig(ctx, config)
+}
+
+func NewLogchefClientFromConfig(ctx context.Context, config logchefClientConfig) *client.Client {
+	logchefURL := config.URL
+	apiKey := config.APIKey
 	if logchefURL == "" {
 		logchefURL = defaultLogchefURL
 	}
@@ -138,8 +237,18 @@ func NewLogchefClient(ctx context.Context, logchefURL, apiKey string) *client.Cl
 
 	slog.Debug("Creating Logchef client", "url", parsedURL.Redacted(), "api_key_set", apiKey != "")
 	return client.New(client.Config{
-		BaseURL: logchefURL,
-		APIKey:  apiKey,
+		BaseURL:                    logchefURL,
+		APIKey:                     apiKey,
+		CACertFile:                 config.CACertFile,
+		InsecureSkipVerify:         config.InsecureSkipVerify,
+		CloudflareAccessClientID:   config.CFAccessClientID,
+		CloudflareAccessSecret:     config.CFAccessClientSecret,
+		CloudflareAccessToken:      config.CFAccessToken,
+		CloudflareAccessAppURL:     config.CFAccessAppURL,
+		CloudflaredPath:            config.CloudflaredPath,
+		CloudflareAccessAutoLogin:  config.CFAccessAutoLogin,
+		CloudflareAuthorizationJWT: config.CFAuthorizationJWT,
+		CloudflareAppSession:       config.CFAppSession,
 	})
 }
 
@@ -147,13 +256,12 @@ func NewLogchefClient(ctx context.Context, logchefURL, apiKey string) *client.Cl
 // from environment variables and injects a configured client into the context.
 var ExtractLogchefClientFromEnv server.StdioContextFunc = func(ctx context.Context) context.Context {
 	// Extract transport config from env vars
-	logchefURL, ok := os.LookupEnv(logchefURLEnvVar)
-	if !ok {
-		logchefURL = defaultLogchefURL
+	config := logchefConfigFromEnv()
+	if config.URL == "" {
+		config.URL = defaultLogchefURL
 	}
-	apiKey := os.Getenv(logchefAPIEnvVar)
 
-	logchefClient := NewLogchefClient(ctx, logchefURL, apiKey)
+	logchefClient := NewLogchefClientFromConfig(ctx, config)
 	return context.WithValue(ctx, logchefClientKey{}, logchefClient)
 }
 
@@ -161,19 +269,12 @@ var ExtractLogchefClientFromEnv server.StdioContextFunc = func(ctx context.Conte
 // from request headers and injects a configured client into the context.
 var ExtractLogchefClientFromHeaders httpContextFunc = func(ctx context.Context, req *http.Request) context.Context {
 	// Extract transport config from request headers, and set it on the context.
-	u, apiKey := urlAndAPIKeyFromHeaders(req)
-	uEnv, apiKeyEnv := urlAndAPIKeyFromEnv()
-	if u == "" {
-		u = uEnv
-	}
-	if u == "" {
-		u = defaultLogchefURL
-	}
-	if apiKey == "" {
-		apiKey = apiKeyEnv
+	config := logchefConfigFromHeaders(req).withFallback(logchefConfigFromEnv())
+	if config.URL == "" {
+		config.URL = defaultLogchefURL
 	}
 
-	logchefClient := NewLogchefClient(ctx, u, apiKey)
+	logchefClient := NewLogchefClientFromConfig(ctx, config)
 	return WithLogchefClient(ctx, logchefClient)
 }
 

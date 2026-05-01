@@ -146,6 +146,9 @@ Choose one of the following installation methods:
      go build -o logchef-mcp.bin ./cmd/logchef-mcp
      ```
 
+     For Codex users connecting to a Cloudflare Access protected Logchef
+     instance, see the [Codex + Cloudflare Access setup guide](docs/codex-cloudflare-access.md).
+
 3. Add the server configuration to your client configuration file. For example, for Claude Desktop:
 
    **If using the binary:**
@@ -255,6 +258,25 @@ Example configuration for clients that support custom headers:
 ```
 
 If headers are not provided, the server will fall back to environment variables (`LOGCHEF_URL` and `LOGCHEF_API_KEY`).
+
+**Cloudflare Access / private CA support**
+
+For Logchef instances behind Cloudflare Access, the client can add Cloudflare Access credentials to every upstream Logchef API request:
+
+- `LOGCHEF_CF_ACCESS_APP_URL`: Access application URL used with `cloudflared access token -app=...`.
+- `LOGCHEF_CLOUDFLARED_PATH`: optional path to the `cloudflared` binary. Defaults to `cloudflared`.
+- `LOGCHEF_CF_ACCESS_AUTO_LOGIN=true`: if token retrieval fails, run `cloudflared access login <app-url>` and retry.
+- `LOGCHEF_CF_ACCESS_CLIENT_ID` / `LOGCHEF_CF_ACCESS_CLIENT_SECRET`: Cloudflare Access service-token headers.
+- `LOGCHEF_CF_ACCESS_TOKEN`: existing Cloudflare Access JWT sent as the `cf-access-token` header.
+- `LOGCHEF_CF_AUTHORIZATION`: existing Cloudflare Access JWT sent as a `CF_Authorization` cookie.
+- `LOGCHEF_CF_APPSESSION`: existing `CF_AppSession` cookie, when your Access policy requires it.
+
+For private TLS roots such as Cloudflare Gateway/WARP inspection CAs:
+
+- `LOGCHEF_CA_CERT_FILE`: path to a PEM bundle appended to the system trust store.
+- `LOGCHEF_INSECURE_SKIP_VERIFY=true`: disable TLS verification as a last-resort local workaround.
+
+For unattended MCP usage, prefer Cloudflare Access service tokens over browser cookies. Browser cookies are useful for short-lived local testing but expire with the browser session.
 
 ### Debug Mode
 
